@@ -1,0 +1,65 @@
+{% extends "panel.html" %}
+
+{% block styles %}
+    <style>
+
+        .hoverable:hover {
+            background-color: #eeeeff;
+        }
+
+        .no-effect-link {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .no-effect-link:hover {
+            text-decoration: none;
+            color: inherit;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="container" style="margin-top: 10px;margin-left: 0px;padding-left: 0px">
+
+        {% for ticket in tickets %}
+            <div class="card  mb-2 shadow-sm hoverable" style="flex-direction: row"
+                 onclick="window.open('/ticket/{{ ticket.id }}','_self');">
+                <img class="rounded-circle" width="50" height="50" src="{{ ticket.starter.get_avatar}}"
+                     style="margin: auto; margin-left: 10px">
+                <div class="card-body d-flex flex-column align-items-start" style="padding: 10px;padding-left: 20px">
+                    <h4 style="margin: 0 0 5px 0">
+                        {{ ticket.title }}
+                    </h4>
+                    <div style="display: flex">
+                        <a href="/user/{{ ticket.starter.pk }}"
+                           class="card-text mb-auto">{{ ticket.starter.username }}</a>
+                        <p class="mb-1 text-muted" style="margin-left: 5px"> &lt;{{ ticket.starter.email }}&gt;</p>
+                    </div>
+                    <p class="mb-1 text-muted">{{ ticket.creation_time|timesince }} ago</p>
+                </div>
+                <div style="padding: 10px ; width: 200px">
+                    {% if ticket.assigned_to %}
+                        <p style="margin-bottom: 5px">agent : {{ ticket.assigned_to }}</p>
+                    {% else %}
+                        <p style="margin-bottom: 5px">agent : Unassigned</p>
+                    {% endif %}
+                    {% if ticket.assigned_team %}
+                        <p style="margin-bottom: 5px">team : {{ ticket.assigned_team }}</p>
+                    {% else %}
+                        <p style="margin-bottom: 5px">team : Unassigned</p>
+                    {% endif %}
+                    <p style="margin-bottom: 5px">status : {{ ticket.get_status_name }}</p>
+                    <p style="margin-bottom: 0px">priority : {{ ticket.priority }}</p>
+                </div>
+            </div>
+
+
+
+        {% endfor %}
+
+    </div>
+
+{% endblock %}
+
