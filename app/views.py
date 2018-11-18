@@ -9,6 +9,7 @@ from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveMode
 from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import GenericViewSet
 
+from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, UserSerializer, TeamSerializer, TagSerializer
 from app.models import Ticket, Message, Tag, User, Team
@@ -119,7 +120,7 @@ def profile(request):
 
 @login_required
 def user_detail(request, pk):
-    client = get_object_or_404(User, pk=pk , is_agent=False)
+    client = get_object_or_404(User, pk=pk, is_agent=False)
     current_agent = User.objects.get(pk=request.user.pk)
     agents = []
 
@@ -152,7 +153,7 @@ def register(request):
         password = request.POST['password']
         password2 = request.POST['password2']
         if password == password2:
-            agent = User.objects.create_user(username=username, password=password ,is_agent=True)
+            agent = User.objects.create_user(username=username, password=password, is_agent=True)
             auth_login(request, agent)
             return redirect("/tickets/")
 
@@ -167,6 +168,8 @@ def logout(request):
 class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin):
     queryset = Ticket.objects.all()
     permission_classes = [AllowAny]
+    # filter_backends = (filters.DjangoFilterBackend,)
+    filterset_class = TicketFilter
 
     def get_queryset(self):
         return self.queryset.filter()
@@ -203,7 +206,3 @@ class TagViewSet(GenericViewSet, ListModelMixin):
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
             return TagSerializer
-
-
-
-

@@ -25,7 +25,6 @@ SECRET_KEY = 'b^%cfl*f#@19r1#8@m70_fun6u9(q0g4d@99pjg2@gtv+obzim'
 DEBUG = True
 CORS_ORIGIN_ALLOW_ALL = True
 
-
 ALLOWED_HOSTS = []
 
 # Application definition
@@ -41,6 +40,7 @@ INSTALLED_APPS = [
     'django_summernote',
     'rest_framework',
     'corsheaders',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -54,6 +54,14 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
 ]
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
 
 ROOT_URLCONF = 'deskpro.urls'
 

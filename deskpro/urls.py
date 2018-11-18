@@ -18,6 +18,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework import routers
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from app.views import *
 
@@ -26,9 +27,6 @@ router.register(r'ticket', TicketViewSet, base_name='ticket')
 router.register(r'agent', AgentViewSet, base_name='agent')
 router.register(r'team', TeamViewSet, base_name='team')
 router.register(r'tag', TagViewSet, base_name='tag')
-
-
-
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -42,7 +40,10 @@ urlpatterns = [
     path('logout/', logout, name='logout'),
     path('profile/', profile, name='profile'),
     path('user/<int:pk>/', user_detail),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/', include(router.urls)),
+
 
 ]
 
