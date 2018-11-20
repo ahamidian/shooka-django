@@ -8,15 +8,15 @@ from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework import status
 from rest_framework.decorators import api_view, action
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, UserSerializer, TeamSerializer, TagSerializer, \
-    AdminSerializer, AgentSerializer
-from app.models import Ticket, Message, Tag, User, Team
+    AdminSerializer, AgentSerializer, InvitationSerializer
+from app.models import Ticket, Message, Tag, User, Team, Invitation
 
 
 def generate_text(length=8):
@@ -224,4 +224,12 @@ class RegisterViewSet(GenericViewSet, CreateModelMixin):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get_serializer_class(self, *args, **kwargs):
-            return AgentSerializer
+        return AgentSerializer
+
+
+class InvitationViewSet(GenericViewSet, ListModelMixin, CreateModelMixin):
+    queryset = Invitation.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self, *args, **kwargs):
+        return InvitationSerializer

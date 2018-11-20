@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
-from app.models import Ticket, User, Team, Message, Company
+from app.models import Ticket, User, Team, Message, Company, Invitation
 
 
 class AgentSerializer(ModelSerializer):
@@ -148,3 +148,24 @@ class AdminSerializer(serializers.ModelSerializer):
             "company_name"
         ]
         read_only_fields = ('id', 'company')
+
+
+class InvitationSerializer(serializers.ModelSerializer):
+    def create(self, validated_data):
+        user = self.context['request'].user
+        invitation = Invitation.objects.create(
+            email=validated_data["email"],
+            inviter=user,
+            company=user.company
+        )
+        return invitation
+
+    class Meta:
+        model = Invitation
+        fields = [
+            "id",
+            "email",
+            "inviter",
+            "company",
+        ]
+        read_only_fields = ('id', 'inviter', 'company')

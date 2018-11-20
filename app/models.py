@@ -12,7 +12,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatar/", null=True, blank=True)
-    is_agent = models.BooleanField(null=True, blank=True)
+    is_agent = models.NullBooleanField(null=True, blank=True)
     team = models.ForeignKey("Team", on_delete=SET_NULL, null=True, blank=True)
     signature = models.TextField(default="", blank=True, null=True)
     company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
@@ -32,10 +32,10 @@ class User(AbstractUser):
             ]
             img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.username[0].upper()) % 20]))
             img_io = BytesIO()
-            font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
+            # font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
             draw = ImageDraw.Draw(img)
-            w, h = draw.textsize(self.username[0].upper(), font=font)
-            draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
+            # w, h = draw.textsize(self.username[0].upper(), font=font)
+            # draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
             img.save(img_io, format='PNG', quality=100)
             self.avatar = ContentFile(img_io.getvalue(), 'image.png')
         super(User, self).save(*args, **kwargs)
