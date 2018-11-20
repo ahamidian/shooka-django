@@ -1,8 +1,7 @@
-from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
-from app.models import Ticket, User, Team, Message
+from app.models import Ticket, User, Team, Message, Company
 
 
 class AgentSerializer(ModelSerializer):
@@ -113,3 +112,39 @@ class TicketDetailSerializer(ModelSerializer):
             "messages",
             "followers",
         ]
+
+
+class AdminSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    company_name = serializers.CharField(write_only=True)
+
+    def create(self, validated_data):
+        company = Company.objects.create(name=validated_data["company_name"])
+        user = User.objects.create(
+            username=validated_data["email"],
+            email=validated_data["email"],
+            is_agent=True,
+            company=company
+        )
+        if validated_data.__contains__("first_name"):
+            user.first_name = validated_data["first_name"]
+
+        if validated_data.__contains__("last_name"):
+            user.first_name = validated_data["last_name"]
+
+        user.set_password(validated_data["password"])
+        user.save()
+        return user
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+            "company",
+            "company_name"
+        ]
+        read_only_fields = ('id', 'company')

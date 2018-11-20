@@ -15,6 +15,7 @@ class User(AbstractUser):
     is_agent = models.BooleanField(null=True, blank=True)
     team = models.ForeignKey("Team", on_delete=SET_NULL, null=True, blank=True)
     signature = models.TextField(default="", blank=True, null=True)
+    company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
 
     def get_avatar(self):
         if self.avatar:
@@ -43,6 +44,7 @@ class User(AbstractUser):
 class Tag(models.Model):
     name = models.CharField(max_length=255)
     creation_time = models.DateTimeField(default=timezone.now)
+    company = models.ForeignKey("Company", on_delete=CASCADE)
 
     def __str__(self):
         return self.name
@@ -50,6 +52,7 @@ class Tag(models.Model):
 
 class Team(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False)
+    company = models.ForeignKey("Company", on_delete=CASCADE)
 
     def __str__(self):
         return self.name
@@ -99,6 +102,7 @@ class Ticket(models.Model):
     assigned_to = models.ForeignKey(User, on_delete=SET_NULL, null=True, related_name="assigned_to")
     assigned_team = models.ForeignKey(Team, on_delete=SET_NULL, null=True)
     followers = models.ManyToManyField(User, related_name="follows")
+    company = models.ForeignKey("Company", on_delete=CASCADE)
 
     def __str__(self):
         return self.title
@@ -114,3 +118,19 @@ class Filter(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Company(models.Model):
+    name = models.CharField(max_length=255)
+    creation_time = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.name
+
+
+class Invitation(models.Model):
+    email = models.EmailField()
+    creation_time = models.DateTimeField(default=timezone.now)
+    inviter = models.ForeignKey(User, on_delete=SET_NULL, null=True)
+    company = models.ForeignKey("Company", on_delete=CASCADE)
+

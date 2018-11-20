@@ -27,6 +27,7 @@ router.register(r'ticket', TicketViewSet, base_name='ticket')
 router.register(r'agent', AgentViewSet, base_name='agent')
 router.register(r'team', TeamViewSet, base_name='team')
 router.register(r'tag', TagViewSet, base_name='tag')
+router.register(r'auth', RegisterViewSet, base_name='auth')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

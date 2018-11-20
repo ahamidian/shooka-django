@@ -5,13 +5,17 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import render, get_object_or_404, redirect
+from rest_framework import status
+from rest_framework.decorators import api_view, action
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
-from app.serializers import TicketDetailSerializer, TicketListSerializer, UserSerializer, TeamSerializer, TagSerializer
+from app.serializers import TicketDetailSerializer, TicketListSerializer, UserSerializer, TeamSerializer, TagSerializer, \
+    AdminSerializer, AgentSerializer
 from app.models import Ticket, Message, Tag, User, Team
 
 
@@ -206,3 +210,18 @@ class TagViewSet(GenericViewSet, ListModelMixin):
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
             return TagSerializer
+
+
+class RegisterViewSet(GenericViewSet, CreateModelMixin):
+    permission_classes = [AllowAny]
+
+    @action(detail=False, methods=['post'])
+    def admin(self, request, *args, **kwargs):
+        serializer = AdminSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def get_serializer_class(self, *args, **kwargs):
+            return AgentSerializer
