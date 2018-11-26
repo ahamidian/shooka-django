@@ -10,8 +10,13 @@ class AgentSerializer(ModelSerializer):
         fields = [
             "id",
             "username",
-            "email",
-            "avatar"
+            "first_name",
+            "last_name",
+            "phone_number",
+            "company",
+            "avatar",
+            "teams",
+            "email"
         ]
 
 
@@ -150,19 +155,36 @@ class AdminSerializer(serializers.ModelSerializer):
 class InvitationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
-        invitation = Invitation.objects.create(
+
+        invitation = Invitation(inviter=user)
+        invitation.save()
+
+        agent = User.objects.create(
+            username=validated_data["email"],
             email=validated_data["email"],
-            inviter=user,
-            company=user.company
+            company=user.company,
+            is_active=False,
+            invitation=invitation
         )
-        return invitation
+        if validated_data.__contains__("first_name"):
+            agent.first_name = validated_data["first_name"]
+
+        if validated_data.__contains__("last_name"):
+            agent.first_name = validated_data["last_name"]
+
+        if validated_data.__contains__("phone_number"):
+            agent.phone_number = validated_data["phone_number"]
+        agent.save()
+        return agent
 
     class Meta:
-        model = Invitation
+        model = User
         fields = [
             "id",
             "email",
-            "inviter",
+            "first_name",
+            "last_name",
+            "phone_number",
             "company",
         ]
-        read_only_fields = ('id', 'inviter', 'company')
+        read_only_fields = ('id', "company")

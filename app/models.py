@@ -8,13 +8,16 @@ from django.db import models
 from django.db.models import SET_NULL, CASCADE
 from django.utils import timezone
 from PIL import Image, ImageDraw, ImageFont
+from django.utils.crypto import get_random_string
 
 
 class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatar/", null=True, blank=True)
-    team = models.ForeignKey("Team", on_delete=SET_NULL, null=True, blank=True)
+    teams = models.ManyToManyField("Team", blank=True)
     signature = models.TextField(default="", blank=True, null=True)
     company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
+    invitation = models.ForeignKey("Invitation", on_delete=CASCADE, null=True, blank=True)
+    phone_number = models.CharField(max_length=11, null=True, blank=True)
 
     def get_avatar(self):
         if self.avatar:
@@ -107,7 +110,8 @@ class Message(models.Model):
             if Ticket.objects.filter(client_id=self.client_sender.id, status=Ticket.STATUS_AWAITING_USER).exists():
                 ticket = Ticket.objects.get(client_id=self.client_sender.id, status=Ticket.STATUS_AWAITING_USER)
             else:
-                ticket = Ticket.objects.create(client=self.client_sender, title=self.title, company=Company.objects.first())
+                ticket = Ticket.objects.create(client=self.client_sender, title=self.title,
+                                               company=Company.objects.first())
             ticket.messages.add(self)
 
 
@@ -159,7 +163,10 @@ class Company(models.Model):
 
 
 class Invitation(models.Model):
-    email = models.EmailField()
     creation_time = models.DateTimeField(default=timezone.now)
-    inviter = models.ForeignKey(User, on_delete=SET_NULL, null=True)
-    company = models.ForeignKey("Company", on_delete=CASCADE)
+    inviter = models.ForeignKey(User, on_delete=SET_NULL, null=True, related_name="inviter")
+    key = models.CharField(max_length=64)
+
+    def save(self, *args, **kwargs):
+        self.key = get_random_string(64).lower()
+        super(Invitation, self).save(*args, **kwargs)

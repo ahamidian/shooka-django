@@ -27,14 +27,15 @@ def generate_text(length=8):
 def home(request):
     for i in range(20):
         client = Client(name=generate_text(5) + "client",
-                                            email=generate_text(5) + "@gmail.com")
+                        email=generate_text(5) + "@gmail.com")
         client.save()
-        message= Message(client_sender=client, title=generate_text(15), content=generate_text(20))
+        message = Message(client_sender=client, title=generate_text(15), content=generate_text(20))
         message.save()
     if request.user.is_authenticated:
         return redirect("/tickets/")
     else:
         return redirect("/login/")
+
 
 #
 # @login_required
@@ -193,12 +194,23 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
             return TicketDetailSerializer
 
 
-class AgentViewSet(GenericViewSet, ListModelMixin):
+class AgentViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin,
+                   DestroyModelMixin):
     queryset = User.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    @action(detail=False, methods=['post'])
+    def invite(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action == "list":
+        if self.action == "invite":
+            return InvitationSerializer
+        else:
             return AgentSerializer
 
 
@@ -233,12 +245,3 @@ class RegisterViewSet(GenericViewSet, CreateModelMixin):
 
     def get_serializer_class(self, *args, **kwargs):
         return AgentSerializer
-
-
-class InvitationViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin,
-                        DestroyModelMixin):
-    queryset = Invitation.objects.all()
-    permission_classes = [IsAuthenticated]
-
-    def get_serializer_class(self, *args, **kwargs):
-        return InvitationSerializer
