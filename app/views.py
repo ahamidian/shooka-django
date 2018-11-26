@@ -16,7 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
-    AdminSerializer, AgentSerializer, InvitationSerializer
+    AdminSerializer, AgentSerializer, AgentSetPasswordSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
 
 
@@ -199,17 +199,9 @@ class AgentViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModel
     queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
 
-    @action(detail=False, methods=['post'])
-    def invite(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "invite":
-            return InvitationSerializer
+            return AgentSerializer
         else:
             return AgentSerializer
 
@@ -238,6 +230,14 @@ class RegisterViewSet(GenericViewSet, CreateModelMixin):
     @action(detail=False, methods=['post'])
     def admin(self, request, *args, **kwargs):
         serializer = AdminSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=False, methods=['post'])
+    def agent(self, request, *args, **kwargs):
+        serializer = AgentSetPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)

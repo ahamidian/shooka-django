@@ -1,3 +1,4 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
@@ -5,6 +6,18 @@ from app.models import Ticket, User, Team, Message, Company, Invitation, Client
 
 
 class AgentSerializer(ModelSerializer):
+    def create(self, validated_data):
+        user = self.context['request'].user
+        invitation = Invitation(inviter=user)
+        invitation.save()
+
+        validated_data["username"] = validated_data["email"]
+        validated_data["invitation"] = invitation
+        validated_data["is_active"] = False
+        validated_data["company"] = user.company
+
+        return super(AgentSerializer, self).create(validated_data)
+
     class Meta:
         model = User
         fields = [
@@ -16,8 +29,10 @@ class AgentSerializer(ModelSerializer):
             "company",
             "avatar",
             "teams",
-            "email"
+            "email",
+            "is_active",
         ]
+        read_only_fields = ("id", "username", "company", "avatar", "is_active")
 
 
 class ClientSerializer(ModelSerializer):
@@ -132,7 +147,7 @@ class AdminSerializer(serializers.ModelSerializer):
             user.first_name = validated_data["first_name"]
 
         if validated_data.__contains__("last_name"):
-            user.first_name = validated_data["last_name"]
+            user.last_name = validated_data["last_name"]
 
         user.set_password(validated_data["password"])
         user.save()
@@ -152,28 +167,14 @@ class AdminSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'company')
 
 
-class InvitationSerializer(serializers.ModelSerializer):
+class AgentSetPasswordSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True)
+    invitation_key = serializers.CharField(write_only=True)
+
     def create(self, validated_data):
-        user = self.context['request'].user
-
-        invitation = Invitation(inviter=user)
-        invitation.save()
-
-        agent = User.objects.create(
-            username=validated_data["email"],
-            email=validated_data["email"],
-            company=user.company,
-            is_active=False,
-            invitation=invitation
-        )
-        if validated_data.__contains__("first_name"):
-            agent.first_name = validated_data["first_name"]
-
-        if validated_data.__contains__("last_name"):
-            agent.first_name = validated_data["last_name"]
-
-        if validated_data.__contains__("phone_number"):
-            agent.phone_number = validated_data["phone_number"]
+        agent = get_object_or_404(User, invitation__key=validated_data["invitation_key"])
+        agent.set_password(validated_data["password"])
+        agent.is_active = True
         agent.save()
         return agent
 
@@ -182,9 +183,10 @@ class InvitationSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "email",
+            "password",
             "first_name",
             "last_name",
-            "phone_number",
             "company",
+            "invitation_key",
         ]
-        read_only_fields = ('id', "company")
+        read_only_fields = ('id', 'company')
