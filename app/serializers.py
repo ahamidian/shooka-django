@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
-from app.models import Ticket, User, Team, Message, Company, Invitation
+from app.models import Ticket, User, Team, Message, Company, Invitation, Client
 
 
 class AgentSerializer(ModelSerializer):
@@ -17,24 +17,12 @@ class AgentSerializer(ModelSerializer):
 
 class ClientSerializer(ModelSerializer):
     class Meta:
-        model = User
+        model = Client
         fields = [
             "id",
-            "username",
+            "name",
             "email",
             "avatar",
-        ]
-
-
-class UserSerializer(ModelSerializer):
-    class Meta:
-        model = User
-        fields = [
-            "id",
-            "username",
-            "email",
-            "avatar",
-            "is_agent",
         ]
 
 
@@ -48,6 +36,14 @@ class TagSerializer(ModelSerializer):
 
 
 class TeamSerializer(ModelSerializer):
+    def create(self, validated_data):
+        user = self.context['request'].user
+        team = Team.objects.create(
+            name=validated_data["name"],
+            company=user.company
+        )
+        return team
+
     class Meta:
         model = Team
         fields = [
@@ -57,13 +53,15 @@ class TeamSerializer(ModelSerializer):
 
 
 class MessageSerializer(ModelSerializer):
-    sender = UserSerializer()
+    client_sender = ClientSerializer()
+    agent_sender = AgentSerializer()
 
     class Meta:
         model = Message
         fields = [
             "id",
-            "sender",
+            "client_sender",
+            "agent_sender",
             "title",
             "content",
             "creation_time",
@@ -72,7 +70,7 @@ class MessageSerializer(ModelSerializer):
 
 
 class TicketListSerializer(ModelSerializer):
-    starter = ClientSerializer()
+    client = ClientSerializer()
     assigned_to = AgentSerializer()
     assigned_team = TeamSerializer()
 
@@ -80,7 +78,7 @@ class TicketListSerializer(ModelSerializer):
         model = Ticket
         fields = [
             "id",
-            "starter",
+            "client",
             "title",
             "creation_time",
             "status",
@@ -91,7 +89,7 @@ class TicketListSerializer(ModelSerializer):
 
 
 class TicketDetailSerializer(ModelSerializer):
-    starter = ClientSerializer()
+    client = ClientSerializer()
     assigned_to = AgentSerializer()
     assigned_team = TeamSerializer()
     messages = MessageSerializer(many=True)
@@ -101,7 +99,7 @@ class TicketDetailSerializer(ModelSerializer):
         model = Ticket
         fields = [
             "id",
-            "starter",
+            "client",
             "title",
             "creation_time",
             "status",
@@ -123,7 +121,6 @@ class AdminSerializer(serializers.ModelSerializer):
         user = User.objects.create(
             username=validated_data["email"],
             email=validated_data["email"],
-            is_agent=True,
             company=company
         )
         if validated_data.__contains__("first_name"):

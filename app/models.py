@@ -12,7 +12,6 @@ from PIL import Image, ImageDraw, ImageFont
 
 class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatar/", null=True, blank=True)
-    is_agent = models.NullBooleanField(null=True, blank=True)
     team = models.ForeignKey("Team", on_delete=SET_NULL, null=True, blank=True)
     signature = models.TextField(default="", blank=True, null=True)
     company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
@@ -41,6 +40,36 @@ class User(AbstractUser):
         super(User, self).save(*args, **kwargs)
 
 
+class Client(models.Model):
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    avatar = models.ImageField(upload_to="avatar/", null=True, blank=True)
+    company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
+
+    def get_avatar(self):
+        if self.avatar:
+            return "http://127.0.0.1:8000" + self.avatar.url
+        return None
+
+    def save(self, *args, **kwargs):
+        if not self.avatar:
+            colors = [
+                "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
+                "#2c3e50",
+                "#f1c40f", "#e67e22", "#e74c3c", "#ecf0f1", "#95a5a6", "#f39c12", "#d35400", "#c0392b", "#bdc3c7",
+                "#7f8c8d"
+            ]
+            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.name[0].upper()) % 20]))
+            img_io = BytesIO()
+            # font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
+            draw = ImageDraw.Draw(img)
+            # w, h = draw.textsize(self.username[0].upper(), font=font)
+            # draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
+            img.save(img_io, format='PNG', quality=100)
+            self.avatar = ContentFile(img_io.getvalue(), 'image.png')
+        super(Client, self).save(*args, **kwargs)
+
+
 class Tag(models.Model):
     name = models.CharField(max_length=255)
     creation_time = models.DateTimeField(default=timezone.now)
@@ -59,7 +88,8 @@ class Team(models.Model):
 
 
 class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=SET_NULL, null=True)
+    client_sender = models.ForeignKey(Client, on_delete=SET_NULL, null=True)
+    agent_sender = models.ForeignKey(User, on_delete=SET_NULL, null=True)
     title = models.CharField(max_length=255, default="no subject")
     content = models.TextField()
     creation_time = models.DateTimeField(default=timezone.now)
@@ -69,15 +99,15 @@ class Message(models.Model):
         return self.title
 
     def is_agent_message(self):
-        return self.sender.is_agent
+        return self.agent_sender is not None
 
     def save(self, *args, **kwargs):
         super(Message, self).save(*args, **kwargs)
         if not self.is_agent_message():
-            if Ticket.objects.filter(starter_id=self.sender.id, status=Ticket.STATUS_AWAITING_USER).exists():
-                ticket = Ticket.objects.get(starter_id=self.sender.id, status=Ticket.STATUS_AWAITING_USER)
+            if Ticket.objects.filter(client_id=self.client_sender.id, status=Ticket.STATUS_AWAITING_USER).exists():
+                ticket = Ticket.objects.get(client_id=self.client_sender.id, status=Ticket.STATUS_AWAITING_USER)
             else:
-                ticket = Ticket.objects.create(starter=self.sender, title=self.title)
+                ticket = Ticket.objects.create(client=self.client_sender, title=self.title, company=Company.objects.first())
             ticket.messages.add(self)
 
 
@@ -92,7 +122,7 @@ class Ticket(models.Model):
     )
     STATUSES = {k: v for (k, v) in STATUS_CHOICES}
 
-    starter = models.ForeignKey(User, on_delete=CASCADE, null=True, blank=True, related_name="starter")
+    client = models.ForeignKey(Client, on_delete=CASCADE, null=True, blank=True, related_name="starter")
     title = models.CharField(max_length=255, default="no subject")
     creation_time = models.DateTimeField(default=timezone.now)
     status = models.IntegerField(choices=STATUS_CHOICES, default=STATUS_AWAITING_AGENT)
@@ -133,4 +163,3 @@ class Invitation(models.Model):
     creation_time = models.DateTimeField(default=timezone.now)
     inviter = models.ForeignKey(User, on_delete=SET_NULL, null=True)
     company = models.ForeignKey("Company", on_delete=CASCADE)
-
