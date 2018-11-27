@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 
 from app.models import Ticket, User, Team, Message, Company, Invitation, Client
+from app.servises import EmailService
 
 
 class AgentSerializer(ModelSerializer):
@@ -10,6 +11,7 @@ class AgentSerializer(ModelSerializer):
         user = self.context['request'].user
         invitation = Invitation(inviter=user)
         invitation.save()
+        EmailService().send_email("amirh.hamidian@gmail.com","welcome to shooka","hi\n you invited to "+user.company.name+"\nclick this link and complete your registration \n " "127.0.0.1:3000/register/agent/"+invitation.key)
 
         validated_data["username"] = validated_data["email"]
         validated_data["invitation"] = invitation

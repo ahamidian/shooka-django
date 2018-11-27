@@ -158,3 +158,13 @@ SUMMERNOTE_CONFIG = {
 }
 
 AUTH_USER_MODEL = 'app.User'
+
+
+# Email Settings
+EMAIL_USE_TSL = True
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'amirh.hamidian@gmail.com'
+EMAIL_HOST_PASSWORD = 'qfuvicmaqrrmsgzt'
+DEFAULT_FROM_EMAIL = 'amirh.hamidian@gmail.com'

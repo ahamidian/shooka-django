@@ -18,6 +18,7 @@ from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
+from app.servises import EmailService
 
 
 def generate_text(length=8):
@@ -25,12 +26,13 @@ def generate_text(length=8):
 
 
 def home(request):
-    for i in range(20):
-        client = Client(name=generate_text(5) + "client",
-                        email=generate_text(5) + "@gmail.com")
-        client.save()
-        message = Message(client_sender=client, title=generate_text(15), content=generate_text(20))
-        message.save()
+    # EmailService().send_email("amirh.hamidian@gmail.com","subject","body")
+    # for i in range(20):
+    #     client = Client(name=generate_text(5) + "client",
+    #                     email=generate_text(5) + "@gmail.com")
+    #     client.save()
+    #     message = Message(client_sender=client, title=generate_text(15), content=generate_text(20))
+    #     message.save()
     if request.user.is_authenticated:
         return redirect("/tickets/")
     else:
@@ -199,6 +201,9 @@ class AgentViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModel
     queryset = User.objects.all()
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        return self.queryset.filter(company=self.request.user.company)
+
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "invite":
             return AgentSerializer
@@ -211,6 +216,9 @@ class TeamViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveMode
     queryset = Team.objects.all()
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        return self.queryset.filter(company=self.request.user.company)
+
     def get_serializer_class(self, *args, **kwargs):
         return TeamSerializer
 
@@ -218,6 +226,9 @@ class TeamViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveMode
 class TagViewSet(GenericViewSet, ListModelMixin):
     queryset = Tag.objects.all()
     permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return self.queryset.filter(company=self.request.user.company)
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
