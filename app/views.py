@@ -16,7 +16,7 @@ from rest_framework.viewsets import GenericViewSet
 from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
-    AdminSerializer, AgentSerializer, AgentSetPasswordSerializer
+    AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
 from app.servises import EmailService
 
@@ -182,12 +182,12 @@ def home(request):
 
 class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin):
     queryset = Ticket.objects.all()
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
     # filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = TicketFilter
 
     def get_queryset(self):
-        return self.queryset.filter()
+        return self.queryset.filter(company=self.request.user.company)
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
@@ -209,6 +209,18 @@ class AgentViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModel
             return AgentSerializer
         else:
             return AgentSerializer
+
+
+class ClientViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin,
+                    DestroyModelMixin):
+    queryset = Client.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    # def get_queryset(self):
+    #     return self.queryset.filter(company=self.request.user.company)
+
+    def get_serializer_class(self, *args, **kwargs):
+        return ClientSerializer
 
 
 class TeamViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin,

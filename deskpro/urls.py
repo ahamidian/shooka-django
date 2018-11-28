@@ -25,6 +25,7 @@ from app.views import *
 router = routers.DefaultRouter()
 router.register(r'ticket', TicketViewSet, base_name='ticket')
 router.register(r'agent', AgentViewSet, base_name='agent')
+router.register(r'client', ClientViewSet, base_name='client')
 router.register(r'team', TeamViewSet, base_name='team')
 router.register(r'tag', TagViewSet, base_name='tag')
 router.register(r'register', RegisterViewSet, base_name='auth')
