@@ -16,7 +16,8 @@ from rest_framework.viewsets import GenericViewSet
 from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
-    AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer
+    AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
+    MessageSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
 from app.servises import EmailService
 
@@ -192,8 +193,21 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
             return TicketListSerializer
+        elif self.action == "create" or self.action == "partial_update":
+            return TicketCreateSerializer
         else:
             return TicketDetailSerializer
+
+
+class MessageViewSet(GenericViewSet, CreateModelMixin, UpdateModelMixin):
+    queryset = Message.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.queryset.filter(company=self.request.user.company)
+
+    def get_serializer_class(self, *args, **kwargs):
+        return MessageSerializer
 
 
 class AgentViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin,
