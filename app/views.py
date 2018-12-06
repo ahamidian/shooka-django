@@ -20,6 +20,7 @@ from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSe
     MessageSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
 from app.servises import EmailService
+from django.db.models.aggregates import *
 
 
 def generate_text(length=8):
@@ -188,7 +189,13 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
     filterset_class = TicketFilter
 
     def get_queryset(self):
-        return self.queryset.filter(company=self.request.user.company)
+        # for i in range(20):
+        #     client = Client(name=generate_text(5) + "client",
+        #                     email=generate_text(5) + "@gmail.com")
+        #     client.save()
+        #     message = Message(client_sender=client, title=generate_text(15), content='{"blocks":[{"key":"e25al","text":"'+generate_text(20)+'","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}')
+        #     message.save()
+        return self.queryset.filter(company=self.request.user.company).order_by("-priority")
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
