@@ -1,9 +1,19 @@
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from app.models import Ticket, User, Team, Message, Company, Invitation, Client
 from app.servises import EmailService
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        data = super(MyTokenObtainPairSerializer, self).validate(attrs)
+        serializer = AgentSerializer(instance=self.user)
+        data['user'] = serializer.data
+        return data
 
 
 class AgentSerializer(ModelSerializer):

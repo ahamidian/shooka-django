@@ -12,12 +12,13 @@ from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveMode
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
-    MessageSerializer
+    MessageSerializer, MyTokenObtainPairSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
 from app.servises import EmailService
 from django.db.models.aggregates import *
@@ -181,11 +182,13 @@ def home(request):
 #     return redirect("/")
 #
 
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
+
 
 class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin):
     queryset = Ticket.objects.all()
     permission_classes = [IsAuthenticated]
-    # filter_backends = (filters.DjangoFilterBackend,)
     filterset_class = TicketFilter
 
     def get_queryset(self):
