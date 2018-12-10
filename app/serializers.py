@@ -1,3 +1,4 @@
+from django.db.models import When
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
@@ -17,6 +18,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class AgentSerializer(ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
     def create(self, validated_data):
         user = self.context['request'].user
         invitation = Invitation(inviter=user)
@@ -30,6 +33,11 @@ class AgentSerializer(ModelSerializer):
         validated_data["company"] = user.company
 
         return super(AgentSerializer, self).create(validated_data)
+
+    def get_avatar(self, obj):
+        if obj.avatar:
+            return "http://127.0.0.1:8000" + obj.avatar.url
+        return None
 
     class Meta:
         model = User
@@ -46,6 +54,8 @@ class AgentSerializer(ModelSerializer):
             "is_active",
         ]
         read_only_fields = ("id", "username", "company", "avatar", "is_active")
+
+
 
 
 class ClientSerializer(ModelSerializer):
