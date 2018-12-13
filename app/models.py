@@ -91,8 +91,8 @@ class Team(models.Model):
 
 
 class Message(models.Model):
-    client_sender = models.ForeignKey(Client, on_delete=SET_NULL, null=True,blank=True)
-    agent_sender = models.ForeignKey(User, on_delete=SET_NULL, null=True,blank=True)
+    client_sender = models.ForeignKey(Client, on_delete=SET_NULL, null=True, blank=True)
+    agent_sender = models.ForeignKey(User, on_delete=SET_NULL, null=True, blank=True)
     title = models.CharField(max_length=255, default="no subject")
     content = models.TextField()
     creation_time = models.DateTimeField(default=timezone.now)
@@ -131,7 +131,7 @@ class Ticket(models.Model):
     creation_time = models.DateTimeField(default=timezone.now)
     status = models.IntegerField(choices=STATUS_CHOICES, default=STATUS_AWAITING_AGENT)
     priority = models.SmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)], default=1)
-    tags = models.ManyToManyField(Tag,blank=True)
+    tags = models.ManyToManyField(Tag, blank=True)
     messages = models.ManyToManyField(Message)
     assigned_to = models.ForeignKey(User, on_delete=SET_NULL, null=True, related_name="assigned_to")
     assigned_team = models.ForeignKey(Team, on_delete=SET_NULL, null=True)
@@ -170,3 +170,28 @@ class Invitation(models.Model):
     def save(self, *args, **kwargs):
         self.key = get_random_string(64).lower()
         super(Invitation, self).save(*args, **kwargs)
+
+
+class Criteria(models.Model):
+    TYPE_CHOICES = (
+        (1, 'type1'),
+        (2, 'type2'),
+    )
+    type = models.SmallIntegerField(choices=TYPE_CHOICES)
+
+    class Meta:
+        abstract = True
+
+
+class CriteriaT1(models.Model):
+    priority = models.SmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)], default=1)
+
+    def is_valid_for(self, ticket):
+        return ticket.priority == self.priority
+
+
+class CriteriaT2(models.Model):
+    title = models.CharField(max_length=255)
+
+    def is_valid_for(self, ticket):
+        return ticket.title == self.title

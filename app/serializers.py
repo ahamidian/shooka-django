@@ -52,10 +52,9 @@ class AgentSerializer(ModelSerializer):
             "teams",
             "email",
             "is_active",
+            "signature",
         ]
         read_only_fields = ("id", "username", "company", "avatar", "is_active")
-
-
 
 
 class ClientSerializer(ModelSerializer):
