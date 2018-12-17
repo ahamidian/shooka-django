@@ -9,6 +9,7 @@ from django.db.models import SET_NULL, CASCADE
 from django.utils import timezone
 from PIL import Image, ImageDraw, ImageFont
 from django.utils.crypto import get_random_string
+import operator
 
 
 class User(AbstractUser):
@@ -173,25 +174,54 @@ class Invitation(models.Model):
 
 
 class Criteria(models.Model):
-    TYPE_CHOICES = (
-        (1, 'type1'),
-        (2, 'type2'),
-    )
-    type = models.SmallIntegerField(choices=TYPE_CHOICES)
-
-    class Meta:
-        abstract = True
-
-
-class CriteriaT1(models.Model):
-    priority = models.SmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)], default=1)
+    name = models.CharField(max_length=255)
 
     def is_valid_for(self, ticket):
-        return ticket.priority == self.priority
+        for criteria_clause in self.clauses.all():
+            if criteria_clause.is_valid_for(ticket):
+                return True
+
+        return False
 
 
-class CriteriaT2(models.Model):
-    title = models.CharField(max_length=255)
+class CriteriaClause(models.Model):
+    criteria = models.ForeignKey(Criteria, on_delete=CASCADE,related_name="clauses")
 
     def is_valid_for(self, ticket):
-        return ticket.title == self.title
+        for single_criteria in self.singles.all():
+            if not single_criteria.is_valid_for(ticket):
+                return False
+
+        return True
+
+
+class SingleCriteria(models.Model):
+    field = models.CharField(max_length=255)
+    value = models.CharField(max_length=255)
+    value_type = models.CharField(max_length=255)
+    operation = models.CharField(max_length=255)
+    criteria_clause = models.ForeignKey(CriteriaClause, on_delete=CASCADE,related_name="singles")
+
+    def is_valid_for(self, ticket):
+        if not hasattr(ticket, self.field):
+            return False
+
+        ticket_value = operator.attrgetter(self.field)(ticket)
+        value = self.value
+        if self.value_type == "int":
+            value = int(self.value)
+
+        if self.operation == "is":
+            return ticket_value == value
+        if self.operation == "is not":
+            return ticket_value != value
+        if self.operation == "grater than":
+            return ticket_value > value
+        if self.operation == "less than":
+            return ticket_value < value
+        if self.operation == "contains":
+            return value in ticket_value
+        if self.operation == "not contains":
+            return value not in ticket_value
+
+        return False

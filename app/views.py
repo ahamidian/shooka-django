@@ -18,8 +18,8 @@ from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
-    MessageSerializer, MyTokenObtainPairSerializer
-from app.models import Ticket, Message, Tag, User, Team, Invitation, Client
+    MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer
+from app.models import Ticket, Message, Tag, User, Team, Invitation, Client, Criteria
 from app.servises import EmailService
 from django.db.models.aggregates import *
 
@@ -292,3 +292,12 @@ class RegisterViewSet(GenericViewSet, CreateModelMixin):
 
     def get_serializer_class(self, *args, **kwargs):
         return AgentSerializer
+
+
+class CriteriaViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateModelMixin, RetrieveModelMixin,
+                      DestroyModelMixin):
+    queryset = Criteria.objects.all()
+    permission_classes = [AllowAny]
+
+    def get_serializer_class(self, *args, **kwargs):
+        return CriteriaSerializer

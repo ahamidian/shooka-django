@@ -4,7 +4,8 @@ from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from app.models import Ticket, User, Team, Message, Company, Invitation, Client
+from app.models import Ticket, User, Team, Message, Company, Invitation, Client, Criteria, SingleCriteria, \
+    CriteriaClause
 from app.servises import EmailService
 
 
@@ -261,3 +262,58 @@ class AgentSetPasswordSerializer(serializers.ModelSerializer):
             "invitation_key",
         ]
         read_only_fields = ('id', 'company')
+
+
+class SingleCriteriaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SingleCriteria
+        fields = [
+            "id",
+            "field",
+            "value",
+            "value_type",
+            "operation",
+        ]
+
+        read_only_fields = ['id']
+
+
+class CriteriaClauseSerializer(serializers.Serializer):
+    singles = SingleCriteriaSerializer(many=True)
+
+    class Meta:
+        model = CriteriaClause
+        fields = [
+            "id",
+            "singles",
+        ]
+
+        read_only_fields = ['id']
+
+
+class CriteriaSerializer(serializers.ModelSerializer):
+    clauses = CriteriaClauseSerializer(many=True)
+
+    def create(self, validated_data):
+        clauses = validated_data.pop("clauses")
+        criteria = super(CriteriaSerializer, self).create(validated_data)
+        for clause in clauses:
+            clause_serializer = CriteriaClauseSerializer(data=clause)
+            clause_serializer.is_valid()
+            criteria_clause = CriteriaClause.objects.create(criteria=criteria)
+            singles = clause_serializer.validated_data["singles"]
+            for single in singles:
+                single_serializer = SingleCriteriaSerializer(data=single)
+                single_serializer.is_valid()
+                single_serializer.validated_data["criteria_clause"] = criteria_clause
+                single_criteria = single_serializer.save()
+        return criteria
+
+    class Meta:
+        model = Criteria
+        fields = [
+            "id",
+            "name",
+            "clauses",
+        ]
+        read_only_fields = ['id']

@@ -30,6 +30,7 @@ router.register(r'client', ClientViewSet, base_name='client')
 router.register(r'team', TeamViewSet, base_name='team')
 router.register(r'tag', TagViewSet, base_name='tag')
 router.register(r'register', RegisterViewSet, base_name='auth')
+router.register(r'criteria', CriteriaViewSet, base_name='criteria')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
