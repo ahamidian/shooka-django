@@ -278,7 +278,7 @@ class SingleCriteriaSerializer(serializers.ModelSerializer):
         read_only_fields = ['id']
 
 
-class CriteriaClauseSerializer(serializers.Serializer):
+class CriteriaClauseSerializer(serializers.ModelSerializer):
     singles = SingleCriteriaSerializer(many=True)
 
     class Meta:
