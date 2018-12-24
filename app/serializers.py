@@ -59,6 +59,8 @@ class AgentSerializer(ModelSerializer):
 
 
 class ClientSerializer(ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
     class Meta:
         model = Client
         fields = [
@@ -67,6 +69,11 @@ class ClientSerializer(ModelSerializer):
             "email",
             "avatar",
         ]
+
+    def get_avatar(self, obj):
+        if obj.avatar:
+            return "http://127.0.0.1:8000" + obj.avatar.url
+        return None
 
 
 class TagSerializer(ModelSerializer):
@@ -145,8 +152,12 @@ class TicketDetailSerializer(ModelSerializer):
     client = ClientSerializer()
     assigned_to = AgentSerializer()
     assigned_team = TeamSerializer()
-    messages = MessageSerializer(many=True)
+    messages = serializers.SerializerMethodField()
     followers = AgentSerializer(many=True)
+
+    def get_messages(self, instance):
+        messages = instance.messages.all().order_by('-creation_time')
+        return MessageSerializer(messages ,many=True).data
 
     class Meta:
         model = Ticket
