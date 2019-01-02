@@ -29,16 +29,14 @@ class User(AbstractUser):
         if not self.avatar:
             colors = [
                 "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
-                "#2c3e50",
-                "#f1c40f", "#e67e22", "#e74c3c", "#ecf0f1", "#95a5a6", "#f39c12", "#d35400", "#c0392b", "#bdc3c7",
-                "#7f8c8d"
+                "#f1c40f", "#e67e22", "#e74c3c", "#f39c12", "#d35400", "#c0392b",
             ]
-            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.username[0].upper()) % 20]))
+            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.username[0].upper()) % 15]))
             img_io = BytesIO()
-            # font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
+            font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
             draw = ImageDraw.Draw(img)
-            # w, h = draw.textsize(self.username[0].upper(), font=font)
-            # draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
+            w, h = draw.textsize(self.username[0].upper(), font=font)
+            draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
             img.save(img_io, format='PNG', quality=100)
             self.avatar = ContentFile(img_io.getvalue(), 'image.png')
         super(User, self).save(*args, **kwargs)
@@ -59,16 +57,14 @@ class Client(models.Model):
         if not self.avatar:
             colors = [
                 "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
-                "#2c3e50",
-                "#f1c40f", "#e67e22", "#e74c3c", "#ecf0f1", "#95a5a6", "#f39c12", "#d35400", "#c0392b", "#bdc3c7",
-                "#7f8c8d"
+                "#f1c40f", "#e67e22", "#e74c3c", "#f39c12", "#d35400", "#c0392b",
             ]
-            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.name[0].upper()) % 20]))
+            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.name[0].upper()) % 15]))
             img_io = BytesIO()
-            # font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
+            font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
             draw = ImageDraw.Draw(img)
-            # w, h = draw.textsize(self.username[0].upper(), font=font)
-            # draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
+            w, h = draw.textsize(self.name[0].upper(), font=font)
+            draw.text(((64 - w) / 2, (54 - h) / 2), self.name[0].upper(), font=font, fill=(255, 255, 255))
             img.save(img_io, format='PNG', quality=100)
             self.avatar = ContentFile(img_io.getvalue(), 'image.png')
         super(Client, self).save(*args, **kwargs)
@@ -98,6 +94,7 @@ class Message(models.Model):
     content = models.TextField()
     creation_time = models.DateTimeField(default=timezone.now)
     is_note = models.BooleanField(default=False)
+    ticket = models.ForeignKey("Ticket", on_delete=CASCADE,null=True,blank=True)
 
     def __str__(self):
         return self.title
@@ -106,14 +103,14 @@ class Message(models.Model):
         return self.agent_sender is not None
 
     def save(self, *args, **kwargs):
-        super(Message, self).save(*args, **kwargs)
         if not self.is_agent_message():
             if Ticket.objects.filter(client_id=self.client_sender.id, status=Ticket.STATUS_AWAITING_USER).exists():
                 ticket = Ticket.objects.get(client_id=self.client_sender.id, status=Ticket.STATUS_AWAITING_USER)
             else:
                 ticket = Ticket.objects.create(client=self.client_sender, title=self.title,
                                                company=Company.objects.first())
-            ticket.messages.add(self)
+            self.ticket = ticket
+        super(Message, self).save(*args, **kwargs)
 
 
 class Ticket(models.Model):
@@ -133,7 +130,6 @@ class Ticket(models.Model):
     status = models.IntegerField(choices=STATUS_CHOICES, default=STATUS_AWAITING_AGENT)
     priority = models.SmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)], default=1)
     tags = models.ManyToManyField(Tag, blank=True)
-    messages = models.ManyToManyField(Message)
     assigned_to = models.ForeignKey(User, on_delete=SET_NULL, null=True, related_name="assigned_to")
     assigned_team = models.ForeignKey(Team, on_delete=SET_NULL, null=True)
     followers = models.ManyToManyField(User, related_name="follows")
@@ -185,7 +181,7 @@ class Criteria(models.Model):
 
 
 class CriteriaClause(models.Model):
-    criteria = models.ForeignKey(Criteria, on_delete=CASCADE,related_name="clauses")
+    criteria = models.ForeignKey(Criteria, on_delete=CASCADE, related_name="clauses")
 
     def is_valid_for(self, ticket):
         for single_criteria in self.singles.all():
@@ -200,7 +196,7 @@ class SingleCriteria(models.Model):
     value = models.CharField(max_length=255)
     value_type = models.CharField(max_length=255)
     operation = models.CharField(max_length=255)
-    criteria_clause = models.ForeignKey(CriteriaClause, on_delete=CASCADE,related_name="singles")
+    criteria_clause = models.ForeignKey(CriteriaClause, on_delete=CASCADE, related_name="singles")
 
     def is_valid_for(self, ticket):
         if not hasattr(ticket, self.field):

@@ -105,14 +105,10 @@ class TeamSerializer(ModelSerializer):
 class MessageSerializer(ModelSerializer):
     client_sender = ClientSerializer(allow_null=True)
     agent_sender = AgentSerializer(allow_null=True)
-    ticket_id = serializers.IntegerField(write_only=True)
 
     def create(self, validated_data):
         validated_data["agent_sender"] = self.context['request'].user
-        ticket_id = validated_data.pop("ticket_id")
         message = super(MessageSerializer, self).create(validated_data)
-        ticket = get_object_or_404(Ticket, pk=ticket_id)
-        ticket.messages.add(message)
         return message
 
     class Meta:
@@ -125,14 +121,12 @@ class MessageSerializer(ModelSerializer):
             "content",
             "creation_time",
             "is_note",
-            "ticket_id",
+            "ticket",
         ]
 
 
 class TicketListSerializer(ModelSerializer):
     client = ClientSerializer()
-    assigned_to = AgentSerializer()
-    assigned_team = TeamSerializer()
 
     class Meta:
         model = Ticket
@@ -156,7 +150,7 @@ class TicketDetailSerializer(ModelSerializer):
     followers = AgentSerializer(many=True)
 
     def get_messages(self, instance):
-        messages = instance.messages.all().order_by('-creation_time')
+        messages = instance.message_set.all().order_by('creation_time')
         return MessageSerializer(messages ,many=True).data
 
     class Meta:
@@ -179,23 +173,12 @@ class TicketDetailSerializer(ModelSerializer):
 
 class TicketCreateSerializer(ModelSerializer):
     client = ClientSerializer()
-    messages = MessageSerializer(many=True)
+    messages = serializers.SerializerMethodField()
     followers = AgentSerializer(many=True)
 
-    # def is_valid(self, raise_exception=False):
-    # def create(self, validated_data):
-    #     user = self.context['request'].user
-    #     invitation = Invitation(inviter=user)
-    #     invitation.save()
-    #     EmailService().send_email("amirh.hamidian@gmail.com", "welcome to shooka",
-    #                               "hi\n you invited to " + user.company.name + "\nclick this link and complete your registration \n " "127.0.0.1:3000/register/agent/" + invitation.key)
-    #
-    #     validated_data["username"] = validated_data["email"]
-    #     validated_data["invitation"] = invitation
-    #     validated_data["is_active"] = False
-    #     validated_data["company"] = user.company
-    #
-    #     return super(TicketCreateSerializer, self).create(validated_data)
+    def get_messages(self, instance):
+        messages = instance.message_set.all().order_by('creation_time')
+        return MessageSerializer(messages, many=True).data
 
     class Meta:
         model = Ticket
