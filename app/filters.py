@@ -2,7 +2,7 @@ from django.db.models import Case, When , Max
 from django_filters import rest_framework as filters
 
 from app.models import Ticket, Message
-
+from django.db.models import F
 
 class TicketOrderingFilter(filters.OrderingFilter):
 
@@ -38,6 +38,15 @@ class TicketOrderingFilter(filters.OrderingFilter):
             preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(tickets_id)])
 
             return Ticket.objects.filter(pk__in=tickets_id).order_by(preserved)
+        if value == ['assigned_to']:
+            return Ticket.objects.all().order_by(F("assigned_to__email").asc(nulls_last=True))
+        if value == ['-assigned_to']:
+            return Ticket.objects.all().order_by(F("assigned_to__email").desc(nulls_last=True))
+
+        if value == ['assigned_team']:
+            return Ticket.objects.all().order_by(F("assigned_team__name").asc(nulls_last=True))
+        if value == ['-assigned_team']:
+            return Ticket.objects.all().order_by(F("assigned_team__name").desc(nulls_last=True))
         return super(TicketOrderingFilter, self).filter(qs, value)
 
 
@@ -49,6 +58,10 @@ class TicketFilter(filters.FilterSet):
     ordering = TicketOrderingFilter(
         # fields(('model field name', 'parameter name'),)
         fields=(
+            ('title', 'title'),
+            ('assigned_to', 'assigned_to'),
+            ('assigned_team', 'assigned_team'),
+            ('client__name', 'client'),
             ('priority', 'priority'),
             ('creation_time', 'creation_time'),
         )
