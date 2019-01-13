@@ -1,7 +1,7 @@
 from django.db.models import When
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, Serializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from app.models import Ticket, User, Team, Message, Company, Invitation, Client, Criteria, SingleCriteria, \
@@ -151,7 +151,7 @@ class TicketDetailSerializer(ModelSerializer):
 
     def get_messages(self, instance):
         messages = instance.message_set.all().order_by('creation_time')
-        return MessageSerializer(messages ,many=True).data
+        return MessageSerializer(messages, many=True).data
 
     class Meta:
         model = Ticket
@@ -197,6 +197,50 @@ class TicketCreateSerializer(ModelSerializer):
         ]
         read_only_fields = ('id', 'client', 'title', 'creation_time', 'messages', 'company')
 
+
+class TicketSplitSerializer(Serializer):
+    messages = serializers.ListField()
+    ticket_title = serializers.CharField()
+    ticket_id = serializers.IntegerField()
+
+    def save(self, **kwargs):
+        old_ticket = Ticket.objects.get(pk=self.validated_data["ticket_id"])
+        new_ticket = Ticket.objects.create(
+            client=old_ticket.client,
+            title=self.validated_data["ticket_title"],
+            creation_time=old_ticket.creation_time,
+            status=old_ticket.status,
+            priority=old_ticket.priority,
+            # tags=old_ticket.tags,
+            assigned_to=old_ticket.assigned_to,
+            assigned_team=old_ticket.assigned_team,
+            # followers=old_ticket.followers,
+            company=old_ticket.company,
+        )
+
+        for message_id in self.validated_data["messages"]:
+            message = Message.objects.get(pk=message_id)
+            message.ticket = new_ticket
+            message.save()
+
+        return old_ticket
+
+
+class TicketMergeSerializer(Serializer):
+    origin_ticket = serializers.IntegerField()
+    destination_ticket = serializers.IntegerField()
+
+    def save(self, **kwargs):
+        origin_ticket = Ticket.objects.get(pk=self.validated_data["origin_ticket"])
+        destination_ticket = Ticket.objects.get(pk=self.validated_data["destination_ticket"])
+
+        origin_ticket.message_set.update(ticket=destination_ticket)
+        origin_ticket.delete()
+        # for message in origin_ticket:
+        #     message.ticket = destination_ticket
+        #     message.save()
+
+        return destination_ticket
 
 class AdminSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

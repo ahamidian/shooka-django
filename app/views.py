@@ -18,7 +18,7 @@ from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
-    MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer
+    MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer, TicketSplitSerializer, TicketMergeSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client, Criteria
 from app.servises import EmailService
 from django.db.models.aggregates import *
@@ -200,6 +200,22 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
         #     message.save()
         return self.queryset.filter(company=self.request.user.company).order_by("-priority")
 
+    @action(detail=False, methods=['post'])
+    def split(self, request):
+        serializer = TicketSplitSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ticket = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=False, methods=['post'])
+    def merge(self, request):
+        serializer = TicketMergeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ticket = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":
             return TicketListSerializer
@@ -239,9 +255,6 @@ class ClientViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateMode
                     DestroyModelMixin):
     queryset = Client.objects.all()
     permission_classes = [IsAuthenticated]
-
-    # def get_queryset(self):
-    #     return self.queryset.filter(company=self.request.user.company)
 
     def get_serializer_class(self, *args, **kwargs):
         return ClientSerializer
