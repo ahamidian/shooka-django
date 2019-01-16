@@ -256,6 +256,14 @@ class ClientViewSet(GenericViewSet, ListModelMixin, CreateModelMixin, UpdateMode
     queryset = Client.objects.all()
     permission_classes = [IsAuthenticated]
 
+    # @action(detail=False, methods=['post'])
+    # def search(self, request):
+    #     serializer = UserSearchSerializer(data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     ticket = serializer.save()
+    #     headers = self.get_success_headers(serializer.data)
+    #     return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+
     def get_serializer_class(self, *args, **kwargs):
         return ClientSerializer
 
