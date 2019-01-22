@@ -20,6 +20,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class AgentSerializer(ModelSerializer):
     avatar = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
 
     def create(self, validated_data):
         user = self.context['request'].user
@@ -40,6 +41,9 @@ class AgentSerializer(ModelSerializer):
             return "http://127.0.0.1:8000" + obj.avatar.url
         return None
 
+    def get_name(self, obj):
+        return obj.first_name or obj.username[0:obj.username.index("@")]
+
     class Meta:
         model = User
         fields = [
@@ -54,6 +58,7 @@ class AgentSerializer(ModelSerializer):
             "email",
             "is_active",
             "signature",
+            "name",
         ]
         read_only_fields = ("id", "username", "company", "avatar", "is_active")
 
