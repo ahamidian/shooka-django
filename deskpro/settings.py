@@ -137,6 +137,8 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
@@ -169,3 +171,4 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = 'amirh.hamidian@gmail.com'
 EMAIL_HOST_PASSWORD = 'qfuvicmaqrrmsgzt'
 DEFAULT_FROM_EMAIL = 'amirh.hamidian@gmail.com'
+
