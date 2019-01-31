@@ -14,6 +14,7 @@ import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 from datetime import timedelta
+import django_heroku
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -172,3 +173,4 @@ EMAIL_HOST_USER = 'amirh.hamidian@gmail.com'
 EMAIL_HOST_PASSWORD = 'qfuvicmaqrrmsgzt'
 DEFAULT_FROM_EMAIL = 'amirh.hamidian@gmail.com'
 
+django_heroku.settings(locals())
