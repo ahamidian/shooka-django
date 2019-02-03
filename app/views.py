@@ -18,7 +18,8 @@ from app.filters import TicketFilter
 from app.forms import MessageForm, ProfileForm
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
-    MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer, TicketSplitSerializer, TicketMergeSerializer
+    MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer, TicketSplitSerializer, TicketMergeSerializer, \
+    TicketNewSerializer
 from app.models import Ticket, Message, Tag, User, Team, Invitation, Client, Criteria
 from app.servises import EmailService
 from django.db.models.aggregates import *
@@ -191,12 +192,17 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
     permission_classes = [IsAuthenticated]
     filterset_class = TicketFilter
 
+    def get_permissions(self):
+        if self.action == "new":
+            return [permission() for permission in [AllowAny]]
+        return [permission() for permission in self.permission_classes]
+
     def get_queryset(self):
         # for i in range(20):
         #     client = Client(name=generate_text(5) + "client",
         #                     email=generate_text(5) + "@gmail.com")
         #     client.save()
-        #     message = Message(client_sender=client, title=generate_text(15), content='{"blocks":[{"key":"e25al","text":"'+generate_text(20)+'","type":"unstyled","depth":0,"inlineStyleRanges":[],"entityRanges":[],"data":{}}],"entityMap":{}}')
+        #     message = Message(client_sender=client, title=generate_text(15), content='<p>'+generate_text(20)+'</p>')
         #     message.save()
         return self.queryset.filter(company=self.request.user.company).order_by("-priority")
 
@@ -215,6 +221,14 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
         ticket = serializer.save()
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+
+    @action(detail=False, methods=['post'])
+    def new(self, request):
+        serializer = TicketNewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ticket = serializer.save()
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":

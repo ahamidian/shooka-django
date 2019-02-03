@@ -241,11 +241,24 @@ class TicketMergeSerializer(Serializer):
 
         origin_ticket.message_set.update(ticket=destination_ticket)
         origin_ticket.delete()
-        # for message in origin_ticket:
-        #     message.ticket = destination_ticket
-        #     message.save()
 
         return destination_ticket
+
+
+class TicketNewSerializer(Serializer):
+    email = serializers.CharField()
+    name = serializers.CharField()
+    title = serializers.CharField()
+    content = serializers.CharField()
+
+    def save(self, **kwargs):
+        client = Client(name=self.validated_data["name"], email=self.validated_data["email"])
+        client.save()
+        message = Message(client_sender=client, title=self.validated_data["title"],
+                          content=self.validated_data["content"])
+        message.save()
+        return message
+
 
 class AdminSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
