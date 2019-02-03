@@ -25,21 +25,21 @@ class User(AbstractUser):
             return "http://127.0.0.1:8000" + self.avatar.url
         return None
 
-    def save(self, *args, **kwargs):
-        if not self.avatar:
-            colors = [
-                "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
-                "#f1c40f", "#e67e22", "#e74c3c", "#f39c12", "#d35400", "#c0392b",
-            ]
-            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.username[0].upper()) % 15]))
-            img_io = BytesIO()
-            font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
-            draw = ImageDraw.Draw(img)
-            w, h = draw.textsize(self.username[0].upper(), font=font)
-            draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
-            img.save(img_io, format='PNG', quality=100)
-            self.avatar = ContentFile(img_io.getvalue(), 'image.png')
-        super(User, self).save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if not self.avatar:
+    #         colors = [
+    #             "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
+    #             "#f1c40f", "#e67e22", "#e74c3c", "#f39c12", "#d35400", "#c0392b",
+    #         ]
+    #         img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.username[0].upper()) % 15]))
+    #         img_io = BytesIO()
+    #         font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
+    #         draw = ImageDraw.Draw(img)
+    #         w, h = draw.textsize(self.username[0].upper(), font=font)
+    #         draw.text(((64 - w) / 2, (54 - h) / 2), self.username[0].upper(), font=font, fill=(255, 255, 255))
+    #         img.save(img_io, format='PNG', quality=100)
+    #         self.avatar = ContentFile(img_io.getvalue(), 'image.png')
+    #     super(User, self).save(*args, **kwargs)
 
 
 class Client(models.Model):
@@ -53,21 +53,21 @@ class Client(models.Model):
             return "http://127.0.0.1:8000" + self.avatar.url
         return None
 
-    def save(self, *args, **kwargs):
-        if not self.avatar:
-            colors = [
-                "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
-                "#f1c40f", "#e67e22", "#e74c3c", "#f39c12", "#d35400", "#c0392b",
-            ]
-            img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.name[0].upper()) % 15]))
-            img_io = BytesIO()
-            font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
-            draw = ImageDraw.Draw(img)
-            w, h = draw.textsize(self.name[0].upper(), font=font)
-            draw.text(((64 - w) / 2, (54 - h) / 2), self.name[0].upper(), font=font, fill=(255, 255, 255))
-            img.save(img_io, format='PNG', quality=100)
-            self.avatar = ContentFile(img_io.getvalue(), 'image.png')
-        super(Client, self).save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if not self.avatar:
+    #         colors = [
+    #             "#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad",
+    #             "#f1c40f", "#e67e22", "#e74c3c", "#f39c12", "#d35400", "#c0392b",
+    #         ]
+    #         img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.name[0].upper()) % 15]))
+    #         img_io = BytesIO()
+    #         font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
+    #         draw = ImageDraw.Draw(img)
+    #         w, h = draw.textsize(self.name[0].upper(), font=font)
+    #         draw.text(((64 - w) / 2, (54 - h) / 2), self.name[0].upper(), font=font, fill=(255, 255, 255))
+    #         img.save(img_io, format='PNG', quality=100)
+    #         self.avatar = ContentFile(img_io.getvalue(), 'image.png')
+    #     super(Client, self).save(*args, **kwargs)
 
 
 class Tag(models.Model):
