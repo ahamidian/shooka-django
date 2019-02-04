@@ -35,6 +35,7 @@ router.register(r'triggers', CriteriaViewSet, base_name='triggers')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home),
+    path('initial', initial),
     # path('summernote/', include('django_summernote.urls')),
     # path('tickets/', tickets_page),
     # path('ticket-setting/<int:pk>/', submit_ticket_setting),
