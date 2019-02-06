@@ -53,6 +53,8 @@ class TicketOrderingFilter(filters.OrderingFilter):
 class TicketFilter(filters.FilterSet):
     my = filters.BooleanFilter(method='my_ticket_filter')
     unassigned = filters.BooleanFilter(method='unassigned_ticket_filter')
+    my_team = filters.BooleanFilter(method='my_team_filter')
+    i_follow = filters.BooleanFilter(method='i_follow_filter')
 
     order_by_field = 'ordering'
     ordering = TicketOrderingFilter(
@@ -78,6 +80,14 @@ class TicketFilter(filters.FilterSet):
         }
 
     def my_ticket_filter(self, queryset, name, value):
+        agent = self.request.user
+        return queryset.filter(**{'assigned_to': agent})
+
+    def my_team_filter(self, queryset, name, value):
+        agent = self.request.user
+        return queryset.filter(**{'assigned_to': agent})
+
+    def i_follow_filter(self, queryset, name, value):
         agent = self.request.user
         return queryset.filter(**{'assigned_to': agent})
 

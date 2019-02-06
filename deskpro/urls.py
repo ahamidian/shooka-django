@@ -36,6 +36,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', home),
     path('initial', initial),
+    path('initial-images', create_images),
+    path('api/filter/', filterr),
     # path('summernote/', include('django_summernote.urls')),
     # path('tickets/', tickets_page),
     # path('ticket-setting/<int:pk>/', submit_ticket_setting),

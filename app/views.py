@@ -1,9 +1,12 @@
 import random
 import string
+import json
 
 from django.contrib.auth.models import User
+from django.http import JsonResponse
 from django.http.response import HttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import ListModelMixin, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, \
@@ -14,7 +17,7 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from app.filters import TicketFilter
-from app.models import Ticket, Message, Tag, User, Team, Client, Criteria, Company
+from app.models import Ticket, Message, Tag, User, Team, Client, Criteria, Company, SingleCriteria
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
     MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer, TicketSplitSerializer, TicketMergeSerializer, \
@@ -39,11 +42,22 @@ def home(request):
         return redirect("/login/")
 
 
+def create_images(request):
+    for i in list(string.ascii_lowercase):
+        client = Client(name=i,
+                        email=generate_text(5) + "@gmail.com")
+        client.save()
+
+    Client.objects.all().delete()
+
+    return HttpResponse("done")
+
+
 def initial(request):
     if Company.objects.count() == 0:
         Company.objects.create(name="pushe")
 
-    if User.objects.count() >= 1:
+    if User.objects.count() <= 1:
         user = User.objects.create(first_name="amirhossein", email="amirh.hamidian@gmail.com",
                                    username="amirh.hamidian@gmail.com", company=Company.objects.first())
         user.set_password("123123")
@@ -53,13 +67,30 @@ def initial(request):
     Message.objects.all().delete()
     Ticket.objects.all().delete()
 
-    for i in range(20):
+    for i in range(1000):
         client = Client(name=generate_text(5) + "client",
                         email=generate_text(5) + "@gmail.com")
         client.save()
         message = Message(client_sender=client, title=generate_text(15), content='<p>' + generate_text(20) + '</p>')
         message.save()
     return HttpResponse("done")
+
+
+@csrf_exempt
+def filterr(request):
+    json_data = json.loads(request.body)
+
+    criteria = SingleCriteria.objects.create(field=json_data["field"], operation=json_data["operator"],
+                                             value=json_data["value"])
+    tickets = []
+    # for ticket in Ticket.objects.all():
+    #     if criteria.is_valid_for(ticket):
+    #         tickets.append(ticket.title)
+    atickets = Ticket.objects.filter(criteria.get_query()).all()
+    for ticket in atickets:
+        tickets.append(ticket.title)
+
+    return JsonResponse({"tickets": tickets})
 
 
 class MyTokenObtainPairView(TokenObtainPairView):
@@ -102,6 +133,25 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
         ticket = serializer.save()
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    @action(detail=True, methods=['get'])
+    def filter(self, request, pk):
+        criteria = get_object_or_404(Criteria, pk=pk)
+        queryset = self.filter_queryset(self.get_queryset().filter(criteria.get_query()))
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = TicketListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+
+        serializer = TicketListSerializer(instance=tickets,many=True)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":

@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.files.base import ContentFile
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import SET_NULL, CASCADE
+from django.db.models import SET_NULL, CASCADE, Q
 from django.utils import timezone
 from PIL import Image, ImageDraw, ImageFont
 from django.utils.crypto import get_random_string
@@ -51,7 +51,7 @@ class Client(models.Model):
             # ]
             # img = Image.new('RGB', (64, 64), getrgb(colors[ord(self.name[0].upper()) % 15]))
             # img_io = BytesIO()
-            # font = ImageFont.truetype('../arial.ttf', 35)
+            # font = ImageFont.truetype('/Library/Fonts/Arial.ttf', 35)
             # draw = ImageDraw.Draw(img)
             # w, h = draw.textsize(self.name[0].upper(), font=font)
             # draw.text(((64 - w) / 2, (54 - h) / 2), self.name[0].upper(), font=font, fill=(255, 255, 255))
@@ -169,6 +169,13 @@ class Criteria(models.Model):
 
         return False
 
+    def get_query(self):
+        # query = Q()
+        # for clause in self.clauses.all():
+        #     query = Q | clause.get_query()
+
+        return self.clauses.first().get_query()
+
 
 class CriteriaClause(models.Model):
     criteria = models.ForeignKey(Criteria, on_delete=CASCADE, related_name="clauses")
@@ -180,16 +187,24 @@ class CriteriaClause(models.Model):
 
         return True
 
+    def get_query(self):
+        query = Q()
+        for single_criteria in self.singles.all():
+            query = query & single_criteria.get_query()
+
+        return query
+
 
 class SingleCriteria(models.Model):
     field = models.CharField(max_length=255)
     value = models.CharField(max_length=255)
-    value_type = models.CharField(max_length=255)
+    value_type = models.CharField(max_length=255, default="string")
     operation = models.CharField(max_length=255)
-    criteria_clause = models.ForeignKey(CriteriaClause, on_delete=CASCADE, related_name="singles")
+    criteria_clause = models.ForeignKey(CriteriaClause, on_delete=CASCADE, related_name="singles", null=True,
+                                        blank=True)
 
     def is_valid_for(self, ticket):
-        if not hasattr(ticket, self.field):
+        if not operator.attrgetter(self.field)(ticket):
             return False
 
         ticket_value = operator.attrgetter(self.field)(ticket)
@@ -211,3 +226,24 @@ class SingleCriteria(models.Model):
             return value not in ticket_value
 
         return False
+
+    def get_standard_operation(self):
+        if self.operation == "is":
+            return ""
+        if self.operation == "is not":
+            return ""
+        if self.operation == "grater than":
+            return "__gt"
+        if self.operation == "less than":
+            return "__lt"
+        if self.operation == "contains":
+            return "__contains"
+        if self.operation == "not contains":
+            return "__contains"
+
+    def get_query(self):
+        key = self.field.replace(".", "__") + self.get_standard_operation()
+        if self.operation.startswith("not"):
+            return ~Q(**{key: self.value})
+        else:
+            return Q(**{key: self.value})
