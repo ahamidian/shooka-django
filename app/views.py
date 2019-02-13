@@ -17,7 +17,8 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from app.filters import TicketFilter
-from app.models import Ticket, Message, Tag, User, Team, Client, Criteria, Company, SingleCriteria
+from app.models import Ticket, Message, Tag, User, Team, Client, Criteria, Company, SingleCriteria, CriteriaClause, \
+    ClientProfile
 from app.serializers import TicketDetailSerializer, TicketListSerializer, TeamSerializer, TagSerializer, \
     AdminSerializer, AgentSerializer, AgentSetPasswordSerializer, ClientSerializer, TicketCreateSerializer, \
     MessageSerializer, MyTokenObtainPairSerializer, CriteriaSerializer, TicketSplitSerializer, TicketMergeSerializer, \
@@ -57,6 +58,30 @@ def initial(request):
     if Company.objects.count() == 0:
         Company.objects.create(name="pushe")
 
+    Criteria.objects.all().delete()
+    my_tickets = Criteria.objects.create(name="My Tickets")
+    i_follow = Criteria.objects.create(name="Tickets I Follow")
+    my_team = Criteria.objects.create(name="My Team's Tickets")
+    unassigned = Criteria.objects.create(name="Unassigned Tickets")
+    all = Criteria.objects.create(name="All Tickets")
+
+    clause_my_tickets = CriteriaClause.objects.create(criteria=my_tickets)
+    clause_i_follow = CriteriaClause.objects.create(criteria=i_follow)
+    clause_my_team = CriteriaClause.objects.create(criteria=my_team)
+    clause_unassigned = CriteriaClause.objects.create(criteria=unassigned)
+    clause_all = CriteriaClause.objects.create(criteria=all)
+
+    single_my_tickets = SingleCriteria.objects.create(criteria_clause=clause_my_tickets, field="assigned_to",
+                                                      operation="is", value="shooka_current_agent")
+    single_i_follow = SingleCriteria.objects.create(criteria_clause=clause_i_follow, field="followers",
+                                                    operation="is", value="shooka_current_agent")
+    single_my_team = SingleCriteria.objects.create(criteria_clause=clause_my_team, field="assigned_team",
+                                                   operation="is", value="shooka_current_agent_team")
+    single_unassigned = SingleCriteria.objects.create(criteria_clause=clause_unassigned, field="assigned_to",
+                                                      operation="isnull", value="True", value_type="boolean")
+    single_all = SingleCriteria.objects.create(criteria_clause=clause_all, field="pk",
+                                               operation="isnull", value="", value_type="boolean")
+
     if User.objects.count() <= 1:
         user = User.objects.create(first_name="amirhossein", email="amirh.hamidian@gmail.com",
                                    username="amirh.hamidian@gmail.com", company=Company.objects.first())
@@ -67,8 +92,10 @@ def initial(request):
     Message.objects.all().delete()
     Ticket.objects.all().delete()
 
-    for i in range(1000):
-        client = Client(name=generate_text(5) + "client",
+    for i in range(100):
+        client_profile=ClientProfile(name=generate_text(5) + "client")
+        client_profile.save()
+        client = Client(profile=client_profile,
                         email=generate_text(5) + "@gmail.com")
         client.save()
         message = Message(client_sender=client, title=generate_text(15), content='<p>' + generate_text(20) + '</p>')
@@ -137,21 +164,15 @@ class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, Update
     @action(detail=True, methods=['get'])
     def filter(self, request, pk):
         criteria = get_object_or_404(Criteria, pk=pk)
-        queryset = self.filter_queryset(self.get_queryset().filter(criteria.get_query()))
+        queryset = self.filter_queryset(self.get_queryset().filter(criteria.get_query(request.user)))
 
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = TicketListSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
         serializer = TicketListSerializer(queryset, many=True)
         return Response(serializer.data)
-
-
-
-        serializer = TicketListSerializer(instance=tickets,many=True)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "list":

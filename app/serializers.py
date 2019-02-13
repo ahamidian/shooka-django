@@ -10,7 +10,6 @@ from app.servises import EmailService
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-
     def validate(self, attrs):
         data = super(MyTokenObtainPairSerializer, self).validate(attrs)
         serializer = AgentSerializer(instance=self.user)
@@ -54,7 +53,7 @@ class AgentSerializer(ModelSerializer):
             "phone_number",
             "company",
             "avatar",
-            "teams",
+            "team",
             "email",
             "is_active",
             "signature",
@@ -65,6 +64,7 @@ class AgentSerializer(ModelSerializer):
 
 class ClientSerializer(ModelSerializer):
     avatar = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = Client
@@ -75,9 +75,14 @@ class ClientSerializer(ModelSerializer):
             "avatar",
         ]
 
+    def get_name(self, obj):
+        if obj.profile.avatar:
+            return obj.profile.name
+        return None
+
     def get_avatar(self, obj):
-        if obj.avatar:
-            return "http://127.0.0.1:8000" + obj.avatar.url
+        if obj.profile.avatar:
+            return "http://127.0.0.1:8000" + obj.profile.avatar.url
         return None
 
 

@@ -14,7 +14,7 @@ import operator
 
 class User(AbstractUser):
     avatar = models.ImageField(upload_to="avatar/", null=True, blank=True)
-    teams = models.ManyToManyField("Team", blank=True)
+    team = models.ForeignKey("Team", blank=True, null=True, on_delete=SET_NULL)
     signature = models.TextField(default="", blank=True, null=True)
     company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
     invitation = models.ForeignKey("Invitation", on_delete=CASCADE, null=True, blank=True)
@@ -31,9 +31,8 @@ class User(AbstractUser):
         super(User, self).save(*args, **kwargs)
 
 
-class Client(models.Model):
+class ClientProfile(models.Model):
     name = models.CharField(max_length=255)
-    email = models.EmailField()
     avatar = models.ImageField(upload_to="avatar/", null=True, blank=True)
     company = models.ForeignKey("Company", on_delete=CASCADE, null=True, blank=True)
 
@@ -57,7 +56,12 @@ class Client(models.Model):
             # draw.text(((64 - w) / 2, (54 - h) / 2), self.name[0].upper(), font=font, fill=(255, 255, 255))
             # img.save(img_io, format='PNG', quality=100)
             # self.avatar = ContentFile(img_io.getvalue(), 'image_'+self.name[0].upper()+'.png')
-        super(Client, self).save(*args, **kwargs)
+        super(ClientProfile, self).save(*args, **kwargs)
+
+
+class Client(models.Model):
+    email = models.EmailField()
+    profile = models.ForeignKey(ClientProfile, on_delete=CASCADE,null=True,blank=True)
 
 
 class Tag(models.Model):
@@ -169,12 +173,12 @@ class Criteria(models.Model):
 
         return False
 
-    def get_query(self):
+    def get_query(self, user):
         # query = Q()
         # for clause in self.clauses.all():
         #     query = Q | clause.get_query()
 
-        return self.clauses.first().get_query()
+        return self.clauses.first().get_query(user)
 
 
 class CriteriaClause(models.Model):
@@ -187,10 +191,10 @@ class CriteriaClause(models.Model):
 
         return True
 
-    def get_query(self):
+    def get_query(self, user):
         query = Q()
         for single_criteria in self.singles.all():
-            query = query & single_criteria.get_query()
+            query = query & single_criteria.get_query(user)
 
         return query
 
@@ -216,7 +220,7 @@ class SingleCriteria(models.Model):
             return ticket_value == value
         if self.operation == "is not":
             return ticket_value != value
-        if self.operation == "grater than":
+        if self.operation == "greater than":
             return ticket_value > value
         if self.operation == "less than":
             return ticket_value < value
@@ -224,6 +228,8 @@ class SingleCriteria(models.Model):
             return value in ticket_value
         if self.operation == "not contains":
             return value not in ticket_value
+        if self.operation == "isnull":
+            return value is None
 
         return False
 
@@ -232,7 +238,7 @@ class SingleCriteria(models.Model):
             return ""
         if self.operation == "is not":
             return ""
-        if self.operation == "grater than":
+        if self.operation == "greater than":
             return "__gt"
         if self.operation == "less than":
             return "__lt"
@@ -240,10 +246,23 @@ class SingleCriteria(models.Model):
             return "__contains"
         if self.operation == "not contains":
             return "__contains"
+        if self.operation == "isnull":
+            return "__isnull"
 
-    def get_query(self):
+    def get_query(self, user):
+        value = self.value
+        if self.value == "shooka_current_agent":
+            value = user.id
+        elif self.value == "shooka_current_agent_team":
+            if user.team is None:
+                return Q(pk__isnull=True)
+            value = user.team_id
+        elif self.value_type == "int":
+            value = int(self.value)
+        elif self.value_type == "boolean":
+            value = bool(self.value)
         key = self.field.replace(".", "__") + self.get_standard_operation()
         if self.operation.startswith("not"):
-            return ~Q(**{key: self.value})
+            return ~Q(**{key: value})
         else:
-            return Q(**{key: self.value})
+            return Q(**{key: value})
