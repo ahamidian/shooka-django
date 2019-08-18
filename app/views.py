@@ -45,12 +45,10 @@ def home(request):
 
 def create_images(request):
     for i in list(string.ascii_lowercase):
-        client = Client(name=i,
-                        email=generate_text(5) + "@gmail.com")
+        client = ClientProfile(name=i)
         client.save()
 
-    Client.objects.all().delete()
-
+    ClientProfile.objects.all().delete()
     return HttpResponse("done")
 
 
@@ -82,9 +80,10 @@ def initial(request):
     single_all = SingleCriteria.objects.create(criteria_clause=clause_all, field="pk",
                                                operation="isnull", value="", value_type="boolean")
 
-    if User.objects.count() <= 1:
+    if User.objects.count() == 0:
         user = User.objects.create(first_name="amirhossein", email="amirh.hamidian@gmail.com",
-                                   username="amirh.hamidian@gmail.com", company=Company.objects.first())
+                                   username="amirh.hamidian@gmail.com", company=Company.objects.first(), is_staff=True,
+                                   is_superuser=True)
         user.set_password("123123")
         user.save()
 
@@ -93,7 +92,7 @@ def initial(request):
     Ticket.objects.all().delete()
 
     for i in range(100):
-        client_profile=ClientProfile(name=generate_text(5) + "client")
+        client_profile = ClientProfile(name=generate_text(5) + "client")
         client_profile.save()
         client = Client(profile=client_profile,
                         email=generate_text(5) + "@gmail.com")
@@ -124,7 +123,8 @@ class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
 
-class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin):
+class TicketViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, ListModelMixin,
+                    DestroyModelMixin):
     queryset = Ticket.objects.all()
     permission_classes = [IsAuthenticated]
     filterset_class = TicketFilter
