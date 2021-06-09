@@ -8,7 +8,7 @@ djangorestframework==3.9.0
 djangorestframework-jwt==1.11.0
 djangorestframework-simplejwt==3.2.3
 pbr==4.0.3
-pip==10.0.1
+pip==19.2
 pycrypto==2.6.1
 pytz==2018.7
 setuptools==39.0.1
