@@ -18,6 +18,6 @@ stevedore==1.28.0
 virtualenv==15.2.0
 virtualenv-clone==0.3.0
 virtualenvwrapper==4.8.2
-wheel==0.31.0
+wheel==0.38.1
 django-heroku==0.3.1
 gunicorn==19.9.0
